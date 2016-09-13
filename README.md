@@ -3,6 +3,7 @@
 ## Contents 
  
    - [Observable](#observable)
+   - [Simple Operators](#simple-operators)
    - [Schedulers](#schedulers)
 
 

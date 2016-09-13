@@ -18,7 +18,8 @@ public class Part02SimpleOperators {
      * Delay operator - the Thread.sleep of the reactive world, it's pausing for a particular increment of time
      * before emitting the whole range events which are thus shifted by the specified time amount.
      *
-     * {@see }
+     * The delay operator uses a Scheduler {@see Part04Schedulers} by default, which means it's .
+     * This explains the .toBlocking()
      */
     @Test
     public void delayOperator() {
