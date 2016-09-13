@@ -11,14 +11,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Operators for working with multiple streams
+ *
  * @author sbalamaci
  */
 public class Part03MergingStreams implements BaseTestObservables {
 
     /**
-     * Zip operator operates sort of like a zipper in the sense that it takes
-     * an event from one stream and waits for an event from another other stream. Once an event for the other stream
-     * arrives, it uses the zip function to merge the two events.
+     * Zip operator operates sort of like a zipper in the sense that it takes an event from one stream and waits
+     * for an event from another other stream. Once an event for the other stream arrives, it uses the zip function
+     * to merge the two events.
      * This is an useful scenario when for example you want to make requests to remote services in parallel and
      * wait for the response before continuing
      *
@@ -43,7 +45,9 @@ public class Part03MergingStreams implements BaseTestObservables {
         Helpers.wait(latch);
     }
 
-
+    /**
+     * Some other useful usecase it's to s
+     */
     @Test
     public void zipUsedToSlowDownAnotherStream() {
         CountDownLatch latch = new CountDownLatch(1);
