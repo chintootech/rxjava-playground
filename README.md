@@ -143,13 +143,41 @@ Observable<Integer> observable = Observable.create(subscriber -> {
 });
 
 observable
-    .take(5)
+    .take(5) //unsubscribes after the 5th event
     .subscribe(val -> log.info("Subscriber received: {}", val),
                err -> log.error("Subscriber received error", err),
                () -> log.info("Subscriber got Completed event") //The Complete event 
                //is triggered by 'take()' operator
 
 ```
+
+### Simple Operators
+
+### interval()
+Periodically emits a number starting from 0 and then increasing the value on each emission.
+```
+log.info("Starting");
+Observable.interval(5, TimeUnit.SECONDS)
+       .take(4)
+       .toBlocking()
+       .subscribe(tick -> log.info("Tick {}", tick),
+                  (ex) -> log.info("Error emitted"),
+                  () -> log.info("Completed"));
+//results
+22:27:44 [main] INFO Part02SimpleOperators - Starting
+22:27:49 [main] INFO Part02SimpleOperators - Tick 0
+22:27:54 [main] INFO Part02SimpleOperators - Tick 1
+22:27:59 [main] INFO Part02SimpleOperators - Tick 2
+22:28:04 [main] INFO Part02SimpleOperators - Tick 3
+22:28:04 [main] INFO Part02SimpleOperators - Completed
+```
+
+The delay operator uses a [Scheduler](#schedulers) by default, which actually means it's
+running the operators and the subscribe operations on a different thread and so the test method
+will terminate before we see the text from the log.
+
+To prevent this we use the **.toBlocking()** operator which returns a **BlockingObservable**. Operators on
+**BlockingObservable** block(wait) until upstream Observable is completed
 
 ### Schedulers
 RxJava provides some high level concepts for concurrent execution, like ExecutorService we're not dealing
