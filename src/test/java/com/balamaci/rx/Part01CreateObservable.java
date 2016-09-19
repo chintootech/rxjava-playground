@@ -5,9 +5,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Subscriber;
 import rx.Subscription;
+import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CompletableFuture;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * @author sbalamaci
@@ -61,6 +66,41 @@ public class Part01CreateObservable implements BaseTestObservables {
         observable.subscribe(val -> log.info("Subscriber2 received: {}", val));
     }
 
+    /**
+     * We can also create an Observable from Callable, making easier to switch from legacy code to
+     * reactive.
+     *
+     * The emission of value to the subscriber using onNext and either onCompleted or onError
+     * is handled by the library.
+     */
+    @Test
+    public void createUsingFromCallable() throws Exception {
+        TestSubscriber<String> testSubscriber = TestSubscriber.create();
+
+        Observable.fromCallable(() -> {
+            Thread.sleep(2_000);
+            log.info("Finished the callable");
+            return "done";
+        })//.subscribeOn(Schedulers.newThread())
+            .subscribe(testSubscriber);
+
+        testSubscriber.awaitTerminalEvent(2_500, MILLISECONDS);
+        testSubscriber.assertCompleted();
+        testSubscriber.assertValueCount(1);
+        testSubscriber.assertValue("done");
+    }
+
+
+    @Test
+    public void createAnObservableThatEmitsInAnInterval() throws Exception {
+        TestSubscriber<Long> testSubscriber = TestSubscriber.create();
+
+        Observable.interval(1, 500, MILLISECONDS).take(2_750, MILLISECONDS).subscribe(testSubscriber);
+
+        testSubscriber.awaitTerminalEvent(3_000, MILLISECONDS);
+        testSubscriber.assertCompleted();
+        testSubscriber.assertValueCount(6);
+    }
 
     /**
      * Using Observable.create to handle the actual emissions of events with the events like onNext, onCompleted, onError
@@ -91,7 +131,6 @@ public class Part01CreateObservable implements BaseTestObservables {
                 err -> log.error("Subscriber received error", err),
                 () -> log.info("Subscriber got Completed event"));
     }
-
 
     /**
      * Observable emits an Error event which is a terminal operation and the subscriber is no longer executing
@@ -193,6 +232,59 @@ public class Part01CreateObservable implements BaseTestObservables {
         );
     }
 
+    /**
+     * In this examples, the following are worth noticing:
+     * <li>
+     * 1) The Action - The create method receives an implementation of Observable.OnSubscribe
+     *    interface. This implementation defines what action will be taken when a subscriber
+     *    subscribes to the Observable.
+     * 2) The Action is lazy - The call method is called by library each time a subscriber
+     *    subscribes to the Observable. Till then the action is not executed, i.e. it is lazy.
+     * 3) Events are pushed to subscriber - onNext, onError and onCompleted methods on Subscriber
+     *    are used to push the events onto it. As per Rx Design Guidelines, the events pushed
+     *    from Observable should follow the below rules:
+     *      A) Zero, one or more than one calls to onNext
+     *      B) Zero or only one call to either of onCompleted or onError
+     * </li>
+     */
+    @Test
+    public void createAnObservableUsingCreate() throws Exception {
+        TestSubscriber<Integer> testSubscriber = TestSubscriber.create();
+
+        Observable.create(new Observable.OnSubscribe<Integer>() {
+
+            public void call(Subscriber<? super Integer> subscriber) {
+                try {
+                    for (int i = 0; i < 5; i++) {
+                        if (subscriber.isUnsubscribed())
+                            return;
+                        int result = doSomeTimeTakingIoOperation(i);
+                        log.info("Value received is {}", result);
+
+                        if (subscriber.isUnsubscribed())
+                            return;
+                        subscriber.onNext(result); // Pass on the data to subscriber
+                    }
+
+                    if (subscriber.isUnsubscribed())
+                        return;
+
+                    subscriber.onCompleted(); // Signal about the completion subscriber
+                } catch (Exception e) {
+                    subscriber.onError(e); // Signal about the error to subscriber
+                }
+            }
+
+            private int doSomeTimeTakingIoOperation(int i) {
+                Helpers.sleepMillis(1_000);
+                return i;
+            }
+        }).subscribeOn(Schedulers.io()).subscribe(testSubscriber);
+
+        testSubscriber.awaitTerminalEventAndUnsubscribeOnTimeout(2_500, MILLISECONDS);
+        testSubscriber.assertNotCompleted();
+        testSubscriber.assertValueCount(2);
+    }
 
 //    @Test
 //    public
