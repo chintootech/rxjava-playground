@@ -80,10 +80,12 @@ public class Part04Schedulers implements BaseTestObservables {
                     int newValue = val * 2;
                     log.info("Mapping new val {}", newValue);
                     return newValue;
-                })
+                })//Any operations before below observeOn will be executed on computation thread,
+                // and subsequent operations will be executed on new thread.
                 .observeOn(Schedulers.newThread());
 
         subscribeWithLog(observable, latch);
+        log.info("Done with subscription, waiting for subscriber to consume data.");
         Helpers.wait(latch);
     }
 
