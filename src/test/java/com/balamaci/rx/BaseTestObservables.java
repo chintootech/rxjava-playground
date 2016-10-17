@@ -3,6 +3,7 @@ package com.balamaci.rx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.observables.BlockingObservable;
@@ -31,6 +32,25 @@ public interface BaseTestObservables {
         });
 
         return observable;
+    }
+
+    default Subscriber<String> getLogSubscriber() {
+
+        return new Subscriber<String>(){
+
+            @Override public void onCompleted() {
+                logComplete();
+            }
+
+            @Override public void onError(Throwable e) {
+                logError();
+            }
+
+            @Override public void onNext(String val) {
+                log.info("Subscriber received {} on {}"
+                    ,val,Thread.currentThread().getName());
+            }
+        };
     }
 
     default void subscribeWithLog(Observable observable) {
